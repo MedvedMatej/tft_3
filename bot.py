@@ -32,6 +32,8 @@ class Tft_bot:
         self.champs = ["Helion"] 
 
         self.last_action = time.time()
+        self.kliker = 0
+        self.fix = time.time()
 
 
     def stage_increase(self):
@@ -60,6 +62,7 @@ class Tft_bot:
         x,y = Vision.locateOnScreen("ClientImages/{}.png".format(self.stages[self.curr_stage]),haystack)
         if x and self.curr_stage != 4:
             Bot.last_action = click(x,y+10)
+            Bot.kliker +=1
 
         #In case the bot wins
         if self.curr_stage == 4:
@@ -115,6 +118,23 @@ if __name__ == "__main__":
             Client.launch_client(Bot.client_location)
             Bot.stage_reset()
             Bot.last_action = time.time()
+
+        if Bot.fix + 600 < time.time() and Bot.curr_stage != 4:
+            print("Stage hasn't changed in time. Restarting...")
+            Client.kill_client()
+            time.sleep(5)
+            Client.launch_client(Bot.client_location)
+            Bot.stage_reset()
+            Bot.fix = time.time()
+            Bot.kliker = 0
+
+        if Bot.kliker >= 10:
+            Client.kill_client()
+            time.sleep(5)
+            Client.launch_client(Bot.client_location)
+            Bot.stage_reset()
+            Bot.fix =time.time()
+            Bot.kliker = 0
 
         if not is_main_loop_in_action:
             is_main_loop_in_action = True
