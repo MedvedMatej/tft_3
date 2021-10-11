@@ -20,7 +20,7 @@ class Client:
         while(not client_active):
                 subprocess.Popen(location)
                 print(".",end = '')
-                time.sleep(15)
+                time.sleep(60)
                 client_active = Client.is_client_open()
 
     @staticmethod

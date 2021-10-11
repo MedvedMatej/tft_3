@@ -1,8 +1,7 @@
-#version 2.03
+#version 3.00
 import time
 from threading import Thread
-
-from keyboardInput import ff,press_key , D, E, F, Enter, Slash
+from keyboardInput import press_key , D, E, F, Enter, Slash
 from capture import screenCapture
 from mouseInput import click
 
@@ -13,7 +12,7 @@ import random
 class Tft_bot:
     def __init__(self):
         #Location for starting the client in case it's not open or we have to restart it
-        self.client_location = 'D:\\Riot Games\\League of Legends\\LeagueClient.exe'
+        self.client_location = 'C:\\Riot Games\\League of Legends\\LeagueClient.exe'
         
         #Variables for the base game loop
         self.curr_stage = 2
@@ -29,22 +28,17 @@ class Tft_bot:
         }
 
         #Variables for ingame actions
-        self.champs = ["Helion"] 
-
+        self.champs ="Sentinel"
         self.last_action = time.time()
         self.kliker = 0
         self.fix = time.time()
 
-
     def stage_increase(self):
+        print("Povečujem iz",self.stages[self.curr_stage],"na",self.stages[self.next_stage])
         self.curr_stage = self.next_stage
         self.next_stage += 1
         if(self.next_stage > 6): self.next_stage = 2
 
-        print("")
-        print("Current stage:",self.stages[self.curr_stage])
-        print("Next stage:", self.stages[self.next_stage])
-        print("")
 
     def stage_reset(self):
         self.curr_stage = 0
@@ -55,14 +49,17 @@ class Tft_bot:
         haystack = screenCapture.screen_shot()
         x1,y1 = Vision.locateOnScreen("ClientImages/{}.png".format(self.stages[self.next_stage]),haystack)
         if x1:
-            if self.next_stage != 4:
-                Bot.last_action = click(x1,y1+10)
+            Bot.last_action = click(x1,y1+10)
             self.stage_increase()
+            self.kliker = 0
 
         x,y = Vision.locateOnScreen("ClientImages/{}.png".format(self.stages[self.curr_stage]),haystack)
         if x and self.curr_stage != 4:
+            pass
             Bot.last_action = click(x,y+10)
-            Bot.kliker +=1
+            self.kliker = self.kliker +1
+
+
 
         #In case the bot wins
         if self.curr_stage == 4:
@@ -77,23 +74,19 @@ class Tft_bot:
             
     def shop_for_champs(self):
         img = screenCapture.screen_shot()[925:1040, 475:1480]   
-        locations = []
 
         loc = Vision.locateAllOnScreen("Champs/"+self.champs+".png",img)
-        if len(loc):
-            locations.append(loc)
-                
-        for loc in locations:
-            print(loc)
-        print("")
 
-        #Buy champs if enough gold + space on bench (not yet added)
-        for x,y in locations:
-            Bot.last_action = click(x+30,y)
+        #Buy champs
+        for x,y in loc:
+            #print(pos)
+            Bot.last_action = click(x+70,y-5)
+            
+            #Bot.last_action = click(x+30,y)
             time.sleep(0.4)
 
         #Need sleep or the clicks don't happen in time
-        time.sleep(1.5)
+        time.sleep(0.5)
         
 
 is_main_loop_in_action = False
@@ -108,54 +101,50 @@ if __name__ == "__main__":
     
     """ Bot.curr_stage = 4
     Bot.next_stage = 5 """
-    
+    #Bot.stage_reset()
+
     while True:
-        
-        if Bot.last_action < time.time()-900:
+        #print(time.time()-Bot.last_action)        
+        print(10 - Bot.kliker)
+        if time.time() - Bot.last_action > 900:
             print("No actions taken: restarting client")
             Client.kill_client()
-            time.sleep(2)
+            time.sleep(15)
             Client.launch_client(Bot.client_location)
             Bot.stage_reset()
             Bot.last_action = time.time()
-
-        if Bot.fix + 600 < time.time() and Bot.curr_stage != 4:
-            print("Stage hasn't changed in time. Restarting...")
-            Client.kill_client()
-            time.sleep(5)
-            Client.launch_client(Bot.client_location)
-            Bot.stage_reset()
-            Bot.fix = time.time()
             Bot.kliker = 0
+
 
         if Bot.kliker >= 10:
             Client.kill_client()
-            time.sleep(5)
+            time.sleep(15)
             Client.launch_client(Bot.client_location)
             Bot.stage_reset()
-            Bot.fix =time.time()
+            Bot.last_action =time.time()
             Bot.kliker = 0
 
         if not is_main_loop_in_action:
             is_main_loop_in_action = True
             t = Thread(target=Bot.main_game_loop())
             t.start()
-
+        
+        
         if Bot.curr_stage == 4:
             time.sleep(1)   
             Bot.shop_for_champs()
             
 
-        #in case you win
-        haystack = screenCapture.screen_shot()
-        x1,y1 = Vision.locateOnScreen("ClientImages/{}.png".format("ok_button"),haystack)
-        if x1 :
-            Bot.last_action = click(x1,y1+10)
-        x,y = Vision.locateOnScreen("ClientImages/{}.png".format("Find_match"),haystack)
-        if x :
-            Bot.last_action = click(x,y+10)
-            Bot.curr_stage = 2
-            Bot.next_stage = 3
+            #in case you win
+            haystack = screenCapture.screen_shot()
+            x1,y1 = Vision.locateOnScreen("ClientImages/{}.png".format("ok_button"),haystack)
+            if x1 :
+                Bot.last_action = click(x1,y1+10)
+            x,y = Vision.locateOnScreen("ClientImages/{}.png".format("Find_match"),haystack)
+            if x :
+                Bot.last_action = click(x,y+10)
+                Bot.curr_stage = 2
+                Bot.next_stage = 3
 
         #check for completed missions
         if Bot.curr_stage == 5:
